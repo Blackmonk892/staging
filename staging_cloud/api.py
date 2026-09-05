@@ -49,6 +49,7 @@ from staging_cloud.dashboard import collect_snapshot, render_dashboard
 from staging_cloud.domain import Agent, Credential, PairingCode
 from staging_cloud.repo_base import Repo
 from staging_cloud.settings import StagingSettings
+from staging_cloud.ui import UI_REPO_KEY, UI_SETTINGS_KEY, register_ui_routes
 from staging_cloud.video_store import (
     StreamStatus,
     VideoSegmentStore,
@@ -758,6 +759,10 @@ def build_app(repo: Repo, settings: StagingSettings) -> web.Application:
     app = web.Application(client_max_size=32 * 1024 * 1024)
     app[_REPO_KEY] = repo
     app[_SETTINGS_KEY] = settings
+    # The central operator UI (staging_cloud.ui) reads repo/settings under its own
+    # AppKeys (aiohttp AppKeys compare by identity); point them at the same objects.
+    app[UI_REPO_KEY] = repo
+    app[UI_SETTINGS_KEY] = settings
     app[_VIDEO_KEY] = VideoSegmentStore(
         max_segments_per_camera=settings.video_max_segments_per_camera
     )
@@ -785,6 +790,9 @@ def build_app(repo: Repo, settings: StagingSettings) -> web.Application:
     # -- staging-only --
     app.router.add_get("/healthz", _handle_healthz)
     app.router.add_get("/", _handle_dashboard)
+    # Central operator UI: /admin landing page + /admin/login|logout + /admin/ui/*
+    # JSON helpers. Layered on the APIs below; changes none of them.
+    register_ui_routes(app)
     app.router.add_get("/admin/state", _handle_admin_state)
     app.router.add_post("/admin/pairing-codes", _handle_admin_mint_codes)
     app.router.add_get("/admin/pairing-codes", _handle_admin_list_codes)

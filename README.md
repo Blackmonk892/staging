@@ -41,6 +41,8 @@ staging_cloud/            <- this repo root
 | `GET /video`, `/video/status`, `/video/{site}/{camera}[/index.m3u8, /seg/{seq}.ts]` | real (admin-token gated) |
 | `POST /v1/whip/...`, `GET /v1/context/...`, `POST /v1/alerts` | registered, returns `501` |
 | `GET /healthz` | real (platform health check) |
+| `GET /admin` | real — **central operator UI**: pair an agent, watch agents connect, links to video (admin token → session cookie) |
+| `GET /admin/ui/state`, `POST /admin/ui/pairing-codes` | real — JSON helpers the `/admin` page polls (admin token *or* session cookie) |
 | `GET /`, `GET/POST /admin/*` | real (admin-token gated) |
 
 Bearer credentials are stored **only as `sha256` hex** -- a database dump cannot
@@ -92,13 +94,23 @@ curl -s localhost:8080/healthz
 # {"status":"ok","db":"ok","env":"staging"}
 ```
 
-### Mint a pairing code + open the dashboard
+### Open the central operator UI
+
+```bash
+open "http://localhost:8080/admin?token=dev-admin"     # sign in once; sets a session cookie
+```
+
+`/admin` is the one place an operator needs: click **Generate Pairing Code**,
+hand the code to whoever is installing the NZeroC Agent, and the **Agents** table
+below shows the machine the moment it enrolls and heartbeats. It also links to
+`/video` (cameras) and `/` (the raw JS-free dashboard).
+
+The lower-level surfaces still exist for scripts:
 
 ```bash
 curl -s -H "X-Admin-Token: dev-admin" -X POST localhost:8080/admin/pairing-codes \
   -d '{"site_id":"site-dev","tenant_id":"tenant-dev"}'
 # {"codes":["pc-XXXXXXXXXX"], ...}
-
 open "http://localhost:8080/?token=dev-admin"          # operations dashboard
 ```
 
