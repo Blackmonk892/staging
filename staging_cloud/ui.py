@@ -74,6 +74,16 @@ def _cookie_ok(request: web.Request, settings: StagingSettings) -> bool:
     return hmac.compare_digest(presented, session_value(settings.staging_admin_token))
 
 
+def admin_session_ok(request: web.Request) -> bool:
+    """True when the request carries a valid admin session cookie.
+
+    Exposed so the JS-free ``GET /`` dashboard in :mod:`staging_cloud.api` can
+    honour the same signed-in browser session the operator UI issues, without
+    duplicating the constant-time cookie check.
+    """
+    return _cookie_ok(request, request.app[UI_SETTINGS_KEY])
+
+
 def _authed(request: web.Request) -> bool:
     """Accept the existing admin-token mechanisms OR the session cookie."""
     settings = request.app[UI_SETTINGS_KEY]

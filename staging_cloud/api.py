@@ -49,7 +49,12 @@ from staging_cloud.dashboard import collect_snapshot, render_dashboard
 from staging_cloud.domain import Agent, Credential, PairingCode
 from staging_cloud.repo_base import Repo
 from staging_cloud.settings import StagingSettings
-from staging_cloud.ui import UI_REPO_KEY, UI_SETTINGS_KEY, register_ui_routes
+from staging_cloud.ui import (
+    UI_REPO_KEY,
+    UI_SETTINGS_KEY,
+    admin_session_ok,
+    register_ui_routes,
+)
 from staging_cloud.video_store import (
     StreamStatus,
     VideoSegmentStore,
@@ -575,10 +580,19 @@ async def _handle_healthz(request: web.Request) -> web.Response:
 
 
 async def _handle_dashboard(request: web.Request) -> web.Response:
-    """``GET /`` -- the admin-gated, JS-free HTML operations dashboard."""
-    _require_admin(request)
-    repo = request.app[_REPO_KEY]
+    """``GET /`` -- the JS-free HTML operations dashboard for a signed-in admin.
+
+    An unauthenticated browser hitting the bare root is redirected to the clean
+    operator UI at ``/admin`` (which renders its own sign-in form) instead of a
+    bare JSON 401, so ``/`` is a usable entry point. The dashboard body itself
+    stays gated on the admin token or an equivalent admin session cookie -- no
+    data is served without auth.
+    """
     settings = request.app[_SETTINGS_KEY]
+    token_ok = domain.admin_token_ok(_admin_token(request), settings.staging_admin_token)
+    if not (token_ok or admin_session_ok(request)):
+        raise web.HTTPFound("/admin")
+    repo = request.app[_REPO_KEY]
     snapshot = await collect_snapshot(
         repo, env_name=settings.env_name, manifest_channel=settings.update_channel
     )

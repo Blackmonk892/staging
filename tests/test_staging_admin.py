@@ -11,7 +11,6 @@ pytestmark = pytest.mark.asyncio
 @pytest.mark.parametrize(
     "method,path",
     [
-        ("GET", "/"),
         ("GET", "/admin/state"),
         ("POST", "/admin/pairing-codes"),
         ("GET", "/admin/pairing-codes"),
@@ -24,6 +23,20 @@ pytestmark = pytest.mark.asyncio
 async def test_admin_routes_reject_missing_token(stg: Rig, method: str, path: str) -> None:
     resp = await stg.client.request(method, path)
     assert resp.status == 401
+
+
+async def test_root_redirects_anonymous_to_operator_ui(stg: Rig) -> None:
+    resp = await stg.client.get("/", allow_redirects=False)
+    assert resp.status in (302, 303)
+    assert resp.headers["Location"] == "/admin"
+
+
+async def test_root_still_token_gated_for_dashboard_body(stg: Rig) -> None:
+    # A wrong token is not a signed-in admin -> still bounced to the UI, never
+    # the raw dashboard.
+    resp = await stg.client.get("/", headers={"X-Admin-Token": "wrong"}, allow_redirects=False)
+    assert resp.status in (302, 303)
+    assert resp.headers["Location"] == "/admin"
 
 
 async def test_admin_rejects_wrong_token(stg: Rig) -> None:
