@@ -1,0 +1,10 @@
+# Dev / CI extras on top of requirements.txt (tests, lint, type-check).
+-r requirements.txt
+
+pytest>=8.0
+pytest-asyncio>=0.23
+ruff>=0.6
+mypy>=1.11
+# Optional: lets tests/test_staging_mongo_repo.py exercise MongoRepo without a
+# real mongod. Skipped automatically when absent.
+mongomock-motor>=0.0.30

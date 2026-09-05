@@ -1,0 +1,38 @@
+# Tooling configuration for the standalone staging-cloud repository.
+# Runtime deps live in requirements.txt (used by the Dockerfile); dev/CI deps in
+# requirements-dev.txt. This file only configures ruff / mypy / pytest so lint
+# and type-check behaviour matches how this code was originally developed.
+
+[tool.pytest.ini_options]
+# Put the repo root on sys.path so `import staging_cloud` resolves the package.
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+no_implicit_optional = true
+check_untyped_defs = true
+files = ["staging_cloud"]
+
+# motor (async MongoDB driver), pymongo and mongomock-motor ship no type info
+# that mypy --strict is happy with. Only repo.py and the optional Mongo test
+# touch them.
+[[tool.mypy.overrides]]
+module = ["motor.*", "pymongo", "pymongo.*", "mongomock_motor.*"]
+ignore_missing_imports = true

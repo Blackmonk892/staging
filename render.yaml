@@ -1,0 +1,44 @@
+# Render Blueprint for the staging cloud (Render Free plan).
+#
+# This file lives at the ROOT of the standalone staging-cloud repository, so
+# `dockerContext: .` is that repo root and `dockerfilePath: ./Dockerfile` is the
+# sibling Dockerfile -- no parent repository is referenced.
+#
+# Deploy with Render's "New > Blueprint" flow pointed at this repo, or via the
+# Render CLI (`render blueprint launch`). See DEPLOY.md for the full walk-through.
+#
+# Render terminates HTTPS at the service edge and forwards plain HTTP to the
+# container on $PORT (Render injects PORT automatically), so the app serves plain
+# HTTP on 0.0.0.0:$PORT. The agent's require_secure_base_url accepts the
+# resulting https://<service>.onrender.com URL unchanged -- no agent code change.
+#
+# MONGODB_URI and STAGING_ADMIN_TOKEN are marked `sync: false`: Render will
+# prompt for them on first deploy and store them as the service's own secret
+# env vars (never committed here). The rest are plain values.
+#
+# Free plan note: the service spins down after ~15 min of inactivity and cold-
+# starts on the next request (tens of seconds). That is fine for interactive
+# testing and the agent's minute-scale heartbeat cadence. Render Free has no
+# always-on option; a paid instance type is required for that (DEPLOY.md step 6).
+
+services:
+  - type: web
+    name: nzerox-staging-cloud
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: STAGING_ADMIN_TOKEN
+        sync: false
+      - key: MONGODB_DB
+        value: nzerox_staging
+      - key: ENV_NAME
+        value: staging
+      - key: LOG_LEVEL
+        value: INFO

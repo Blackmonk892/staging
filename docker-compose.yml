@@ -1,0 +1,35 @@
+# Local end-to-end against a real mongo:7, for machines that have Docker.
+# From this repo's root:  docker compose up --build
+#
+# The staging cloud then listens on http://localhost:8080 (loopback http is
+# accepted by the agent's require_secure_base_url for local testing).
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - staging_mongo_data:/data/db
+    # No published port by default -- only the app container needs it. Uncomment
+    # to poke it with mongosh from the host.
+    # ports:
+    #   - "27017:27017"
+
+  staging_cloud:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017"
+      MONGODB_DB: "nzerox_staging"
+      STAGING_ADMIN_TOKEN: "dev-admin"
+      ENV_NAME: "staging-local"
+      LOG_LEVEL: "INFO"
+
+volumes:
+  staging_mongo_data:

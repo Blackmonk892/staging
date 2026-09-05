@@ -1,0 +1,20 @@
+# Build context is this repo's root. Keep the image small and secret-free.
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.git/
+.gitignore
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/
+docker-compose.yml
+*.md
